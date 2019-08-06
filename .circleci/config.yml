@@ -5,6 +5,8 @@
 version: 2
 jobs:
   build:
+    environment:
+      CC_TEST_REPORTER_ID: 1908703d23d1cece579c3e5579779b57f135257d5e615ce082b213238dfdb1af
     docker:
       # specify the version you desire here
       - image: circleci/node:10.13.0
@@ -52,12 +54,10 @@ jobs:
 
       # run tests!
       - run:
-          name: 'Run node test and Collect Coverage Reports'
+          name: "Run node test and Collect Coverage Reports"
           command: yarn cover
-      - store_artifacts:
-          path: coverage
 
       - run:
           name: Report code coverage from circleCI to Code Climate
           command: |
-            ./cc-test-reporter after-build -t simplecov --exit-code $? || true
+            ./cc-test-reporter format-coverage -t lcov -o "coverage/codeclimate.$CIRCLE_NODE_INDEX.json"
