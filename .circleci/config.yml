@@ -66,8 +66,5 @@ workflows:
       - test_and_report:
           requires:
             - checkout_code
-      - build_application_artifacts:
-          requires:
-            - test_and_report
-            - checkout_code
+      
      
