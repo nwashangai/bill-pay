@@ -1,63 +1,70 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
+# CircleCI 2.0 configuration file
+
+# Check https://circleci.com/docs/1.0/language-nodejs/ for more details
 version: 2
+defaults: &defaults
+  docker:
+    - image: circleci/node:10.13.0
+  working_directory: ~/bill-pay
+
+install_npm_packages: &install_npm_packages
+  run:
+    name: Install Npm Dependencies
+    command: yarn install
+
+attach_workspace: &attach_workspace
+  attach_workspace:
+    at: ~/bill-pay
+
+persist_to_workspace: &persist_to_workspace
+  persist_to_workspace:
+    root: .
+    paths: .
+
 jobs:
-  build:
-    environment:
-      CC_TEST_REPORTER_ID: 1908703d23d1cece579c3e5579779b57f135257d5e615ce082b213238dfdb1af
-    docker:
-      # specify the version you desire here
-      - image: circleci/node:10.13.0
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mongo:3.4.4
-
-    working_directory: ~/bill-pay
-
-    steps:
-      - checkout
-
-      # Download and cache dependencies
+  checkout_code:
+    <<: *defaults
+    steps: # a collection of executable commands
+      - checkout # special step to check out source code to working directory
       - restore_cache:
+          name: Restore Yarn Package Cache
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
-      - type: cache-restore
-        name: Restore Code Climate cache
-        key: v1-code-climate-0.1.4
-      - run:
-          name: Install Code Climate reporter
-          command: |
-            if [[ ! -x cc-test-reporter ]]
-            then
-              curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-0.1.4-linux-amd64 > ./cc-test-reporter
-              chmod +x ./cc-test-reporter
-            fi
-      - type: cache-save
-        name: Save Code Climate cache
-        key: v1-code-climate-0.1.4
-        paths:
-          - ./cc-test-reporter
-
-      - run: yarn install
+            - yarn-packages-{{ checksum "yarn.lock" }}
+      - *install_npm_packages
 
       - save_cache:
+          name: Save Yarn Package Cache
+          key: yarn-packages-{{ checksum "yarn.lock" }}
           paths:
+            - ~/.cache/yarn
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+      - *persist_to_workspace
 
-      # run tests!
+  test_and_report:
+    <<: *defaults
+    steps:
+      - *attach_workspace
+      - *install_npm_packages
       - run:
-          name: "Run node test and Collect Coverage Reports"
-          command: yarn cover
-
-      - run:
-          name: Report code coverage from circleCI to Code Climate
+          name: Install code climate test reporter
           command: |
-            ./cc-test-reporter format-coverage -t lcov -o "coverage/codeclimate.$CIRCLE_NODE_INDEX.json"
+            curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+            chmod +x ./cc-test-reporter
+      - run:
+          name: Run test suites
+          command: |
+            ./cc-test-reporter before-build
+            yarn cover
+            ./cc-test-reporter after-build --exit-code $?
+      - *persist_to_workspace
+  
+workflows:
+  version: 2
+  test_build_deploy:
+    jobs:
+      - checkout_code
+      - test_and_report:
+          requires:
+            - checkout_code
+      
+     
