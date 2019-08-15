@@ -4,8 +4,8 @@
 
 #### How should this be manually tested?
 
-#### What are the relevant Zenhub stories?
+#### What are the relevant Zenhub issues?
 
-#### Any background context you want to add ?
+#### Any background context you want to add?
 
 #### Screenshots
