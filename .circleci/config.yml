@@ -5,6 +5,13 @@ version: 2
 defaults: &defaults
   docker:
     - image: circleci/node:10.13.0
+      environment:
+        NODE_ENV: test
+        DATABASE_URL: postgres://root@localhost/bill_pay
+    - image: postgres:9.6-alpine
+      environment:
+        POSTGRES_USER: root
+        POSTGRES_DB: bill_pay
   working_directory: ~/bill-pay
 
 install_npm_packages: &install_npm_packages
@@ -50,6 +57,13 @@ jobs:
           command: |
             curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
             chmod +x ./cc-test-reporter
+      - run:
+          name: Wait for postgres to be ready
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+      - run:
+          name: Run migrations
+          command: |
+            yarn migrate
       - run:
           name: Run test suites
           command: |
