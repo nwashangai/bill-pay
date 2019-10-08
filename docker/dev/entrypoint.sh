@@ -4,7 +4,7 @@ printf "\n\n======================================\n"
 printf "Making database migrations"
 printf "\n======================================\n\n"
 export NODE_ENV=development
-OPERATION=migrate yarn sequelize
+yarn migrate
 
 printf "\n\n======================================\n"
 printf "Start the application"
